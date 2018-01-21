@@ -1,0 +1,3 @@
+"source" has all unchanged files from https://github.com/d0k3/Decrypt9WIP/source removed
+Only main.c has been change as this is an extremely simple homebrew that's just using d9wip as a template.
+I'll add proper submodule linking later.
