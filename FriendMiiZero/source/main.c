@@ -1,9 +1,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "frd.h"
 #include "utils.h"
+
+Result dumpFriend(u64 lfcs_share, u64 lfcs_msed, int num){
+	Result res;
+	char filename[0x100]={0};
+	u8 part1[0x1000]={0};
+	memcpy(part1, &lfcs_msed, 5);
+	snprintf(filename, 0xFF,"/LFCS/%d_%04llu-%04llu-%04llu_part1.sed", num, lfcs_share/100000000LL, (lfcs_share/10000)%10000, lfcs_share%10000);
+	FILE *g=fopen(filename,"wb");
+	res = fwrite(part1, 1, 0x1000, g);
+	fclose(g);
+	return res;
+}
 
 int main(int argc, char **argv) 
 {
@@ -14,6 +27,8 @@ int main(int argc, char **argv)
 
 	res = frdInit();
 	printf("frd:u %08X\n",(int)res);
+	
+	mkdir("sdmc:/LFCS", 0777);
 	
 	size_t friendCount = 0;
 	FriendKey friendKey[FRIEND_LIST_SIZE];
@@ -36,21 +51,24 @@ int main(int argc, char **argv)
 		//memcpy(&friendNames[i][0x0], &friendMii[i].name[0], 0x14);
 	}
 	
-	FILE *f=fopen("friends.txt","w");
-	fprintf(f,"Name       : Friend Code    LFCS(BE)         : LFCS(LE)\n"); 
-	fprintf(f,"-------------------------------------------------------------\n");
+	FILE *f=fopen("/LFCS/friends.txt","w");
+	fprintf(f,"\tName       : Friend Code    LFCS(BE)         : LFCS(LE)\n"); 
+	fprintf(f,"-----------------------------------------------------------------\n");
 	for (size_t i = 0x0; i < friendCount; i++)
 	{
 		memcpy(lfcs, &friendKey[i].localFriendCode, 8);
-		fprintf(f,"%s : %04llu-%04llu-%04llu %016llX : ", &friendNames[i][0], friendCodes[i]/100000000LL, (friendCodes[i]/10000)%10000, friendCodes[i]%10000, friendKey[i].localFriendCode);
+		fprintf(f,"%d.\t%s : %04llu-%04llu-%04llu %016llX : ", i, &friendNames[i][0], friendCodes[i]/100000000LL, (friendCodes[i]/10000)%10000, friendCodes[i]%10000, friendKey[i].localFriendCode);
 		for(int i=0;i<5;i++){
 			fprintf(f,"%02X ",lfcs[i]);
 		}
 		fprintf(f,"\n");
+		res = dumpFriend(friendCodes[i], friendKey[i].localFriendCode&0xFFFFFFFFFFLL, i);
+		if(res) printf("Friend %d dumped to LFCS/\n", i);
+		else    printf("Friend %d file dump error\n", i);
 	}
 	fclose(f);
 	
-	printf("%d friends dumped to friends.txt\n\n",friendCount);
+	printf("\n%d friends dumped to sdmc:/LFCS\n\n",friendCount);
 	printf("Press start to exit\n");
 	
 	while (aptMainLoop()) 
