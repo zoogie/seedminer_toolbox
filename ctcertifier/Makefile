@@ -6,8 +6,7 @@ ifeq ($(strip $(DEVKITARM)),)
 $(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
 endif
 
-TOPDIR ?= $(CURDIR)
-include $(DEVKITARM)/3ds_rules
+include $(DEVKITARM)/ds_rules
 
 #---------------------------------------------------------------------------------
 # TARGET is the name of the output
@@ -15,49 +14,61 @@ include $(DEVKITARM)/3ds_rules
 # SOURCES is a list of directories containing source code
 # DATA is a list of directories containing data files
 # INCLUDES is a list of directories containing header files
-#
-# NO_SMDH: if set to anything, no SMDH file is generated.
-# ROMFS is the directory which contains the RomFS, relative to the Makefile (Optional)
-# APP_TITLE is the name of the app stored in the SMDH file (Optional)
-# APP_DESCRIPTION is the description of the app stored in the SMDH file (Optional)
-# APP_AUTHOR is the author of the app stored in the SMDH file (Optional)
-# ICON is the filename of the icon (.png), relative to the project folder.
-#   If not set, it attempts to use one of the following (in this order):
-#     - <Project name>.png
-#     - icon.png
-#     - <libctru folder>/default_icon.png
+# SPECS is the directory containing the important build and link files
 #---------------------------------------------------------------------------------
-TARGET		:=	$(notdir $(CURDIR))
+export TARGET	:=	Decrypt9WIP
 BUILD		:=	build
-SOURCES		:=	source
+SOURCES		:=	source source/fatfs source/decryptor source/gamecart
 DATA		:=	data
-INCLUDES	:=	include
-#ROMFS		:=	romfs
+INCLUDES	:=	source source/font source/fatfs
+
+#---------------------------------------------------------------------------------
+# THEME: if set to anything, name of the themes file folder inside resources
+#---------------------------------------------------------------------------------
+THEME	:=	
 
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft
+ARCH	:=	-mthumb -mthumb-interwork -flto
 
-CFLAGS	:=	-g -Wall -O2 -mword-relocations \
-			-fomit-frame-pointer -ffunction-sections \
+CFLAGS	:=	-g -Wall -Wextra -Wpedantic -Wno-main -O2\
+			-march=armv5te -mtune=arm946e-s -fomit-frame-pointer\
+			-ffast-math -std=gnu11\
 			$(ARCH)
 
-CFLAGS	+=	$(INCLUDE) -DARM11 -D_3DS
+CFLAGS	+=	$(INCLUDE) -DARM9 -D_GNU_SOURCE
 
-CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
+CFLAGS	+=	-DBUILD_NAME="\"$(TARGET) (`date +'%Y/%m/%d'`)\""
+
+ifneq ($(strip $(THEME)),)
+CFLAGS	+=	-DUSE_THEME=\"\/$(THEME)\"
+endif
+
+ifeq ($(FONT),ORIG)
+CFLAGS	+=	-DFONT_ORIGINAL
+else ifeq ($(FONT),6X10)
+CFLAGS	+=	-DFONT_6X10
+else ifeq ($(FONT),ACORN)
+CFLAGS	+=	-DFONT_ACORN
+else ifeq ($(FONT),GB)
+CFLAGS	+=	-DFONT_GB
+else
+CFLAGS	+=	-DFONT_6X10
+endif
+
+CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions
 
 ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-specs=3dsx.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+LDFLAGS	=	-T../link.ld -nostartfiles -g $(ARCH) -Wl,-Map,$(TARGET).map
 
-LIBS	:= -lctru -lm
+LIBS	:=
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:= $(CTRULIB)
-
+LIBDIRS	:=
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
@@ -66,8 +77,9 @@ LIBDIRS	:= $(CTRULIB)
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 #---------------------------------------------------------------------------------
 
-export OUTPUT	:=	$(CURDIR)/$(TARGET)
-export TOPDIR	:=	$(CURDIR)
+export OUTPUT_D	:=	$(CURDIR)/output
+export OUTPUT	:=	$(OUTPUT_D)/$(TARGET)
+export RELEASE	:=	$(CURDIR)/release
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
@@ -77,8 +89,6 @@ export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
-PICAFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.v.pica)))
-SHLISTFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.shlist)))
 BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
 
 #---------------------------------------------------------------------------------
@@ -95,14 +105,8 @@ else
 endif
 #---------------------------------------------------------------------------------
 
-export OFILES_SOURCES 	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
-
-export OFILES_BIN	:=	$(addsuffix .o,$(BINFILES)) \
-			$(PICAFILES:.v.pica=.shbin.o) $(SHLISTFILES:.shlist=.shbin.o)
-
-export OFILES := $(OFILES_BIN) $(OFILES_SOURCES)
-
-export HFILES	:=	$(PICAFILES:.v.pica=_shbin.h) $(SHLISTFILES:.shlist=_shbin.h) $(addsuffix .h,$(subst .,_,$(BINFILES)))
+export OFILES	:= $(addsuffix .o,$(BINFILES)) \
+			$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
 
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
@@ -110,40 +114,75 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
-ifeq ($(strip $(ICON)),)
-	icons := $(wildcard *.png)
-	ifneq (,$(findstring $(TARGET).png,$(icons)))
-		export APP_ICON := $(TOPDIR)/$(TARGET).png
-	else
-		ifneq (,$(findstring icon.png,$(icons)))
-			export APP_ICON := $(TOPDIR)/icon.png
-		endif
-	endif
-else
-	export APP_ICON := $(TOPDIR)/$(ICON)
-endif
-
-ifeq ($(strip $(NO_SMDH)),)
-	export _3DSXFLAGS += --smdh=$(CURDIR)/$(TARGET).smdh
-endif
-
-ifneq ($(ROMFS),)
-	export _3DSXFLAGS += --romfs=$(CURDIR)/$(ROMFS)
-endif
-
-.PHONY: $(BUILD) clean all
+.PHONY: common clean all gateway firm binary cakehax cakerop brahma release
 
 #---------------------------------------------------------------------------------
-all: $(BUILD)
+all: firm
 
-$(BUILD):
-	@[ -d $@ ] || mkdir -p $@
-	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
+common:
+	@[ -d $(OUTPUT_D) ] || mkdir -p $(OUTPUT_D)
+	@[ -d $(BUILD) ] || mkdir -p $(BUILD)
+
+submodules:
+	@-git submodule update --init --recursive
+
+binary: common
+	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
+
+firm: binary
+	@firmtool build $(OUTPUT).firm -n 0x23F00000 -e 0 -D $(OUTPUT).elf -A 0x23F00000 -C NDMA -i
+
+gateway: binary
+	@cp resources/LauncherTemplate.dat $(OUTPUT_D)/Launcher.dat
+	@dd if=$(OUTPUT).bin of=$(OUTPUT_D)/Launcher.dat bs=1497296 seek=1 conv=notrunc
+
+cakehax: submodules binary
+	@make dir_out=$(OUTPUT_D) name=$(TARGET).dat -C CakeHax bigpayload
+	@dd if=$(OUTPUT).bin of=$(OUTPUT).dat bs=512 seek=160
+
+cakerop: cakehax
+	@make DATNAME=$(TARGET).dat DISPNAME=$(TARGET) GRAPHICS=../resources/CakesROP -C CakesROP
+	@mv CakesROP/CakesROP.nds $(OUTPUT_D)/$(TARGET).nds
+
+brahma: submodules binary
+	@[ -d BrahmaLoader/data ] || mkdir -p BrahmaLoader/data
+	@cp $(OUTPUT).bin BrahmaLoader/data/payload.bin
+	@cp resources/BrahmaAppInfo BrahmaLoader/resources/AppInfo
+	@cp resources/BrahmaIcon.png BrahmaLoader/resources/icon.png
+	@make --no-print-directory -C BrahmaLoader APP_TITLE=$(TARGET)
+	@mv BrahmaLoader/output/*.3dsx $(OUTPUT_D)
+	@mv BrahmaLoader/output/*.smdh $(OUTPUT_D)
+
+release:
+	@rm -fr $(BUILD) $(OUTPUT_D) $(RELEASE)
+	@make --no-print-directory binary
+	@-make --no-print-directory firm
+	@-make --no-print-directory gateway
+	@-make --no-print-directory cakerop
+	@-make --no-print-directory brahma
+	@[ -d $(RELEASE) ] || mkdir -p $(RELEASE)
+	@[ -d $(RELEASE)/$(TARGET) ] || mkdir -p $(RELEASE)/$(TARGET)
+	@[ -d $(RELEASE)/scripts ] || mkdir -p $(RELEASE)/scripts
+	@-cp $(OUTPUT_D)/Launcher.dat $(RELEASE)
+	@cp $(OUTPUT).bin $(RELEASE)
+	@-cp $(OUTPUT).firm $(RELEASE)
+	@-cp $(OUTPUT).dat $(RELEASE)
+	@-cp $(OUTPUT).nds $(RELEASE)
+	@-cp $(OUTPUT).3dsx $(RELEASE)/$(TARGET)
+	@-cp $(OUTPUT).smdh $(RELEASE)/$(TARGET)
+	@-cp $(CURDIR)/resources/d9logo.bin $(RELEASE)/d9logo.bin
+	@cp $(CURDIR)/scripts/*.py $(RELEASE)/scripts
+	@cp $(CURDIR)/README.md $(RELEASE)
+	@-[ ! -n "$(strip $(THEME))" ] || (mkdir $(RELEASE)/$(THEME) && cp $(CURDIR)/resources/$(THEME)/*.bin $(RELEASE)/$(THEME))
+	@-7z a $(RELEASE)/$(TARGET)-`date +'%Y%m%d-%H%M%S'`.zip $(RELEASE)/*
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(TARGET).3dsx $(OUTPUT).smdh $(TARGET).elf
+	@-make clean --no-print-directory -C CakeHax
+	@-make clean --no-print-directory -C CakesROP
+	@-make clean --no-print-directory -C BrahmaLoader
+	@rm -fr $(BUILD) $(OUTPUT_D) $(RELEASE)
 
 
 #---------------------------------------------------------------------------------
@@ -154,52 +193,25 @@ DEPENDS	:=	$(OFILES:.o=.d)
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-ifeq ($(strip $(NO_SMDH)),)
-$(OUTPUT).3dsx	:	$(OUTPUT).elf $(OUTPUT).smdh
-else
-$(OUTPUT).3dsx	:	$(OUTPUT).elf
-endif
-
-$(OFILES_SOURCES) : $(HFILES)
-
+$(OUTPUT).bin	:	$(OUTPUT).elf
 $(OUTPUT).elf	:	$(OFILES)
+
+
+#---------------------------------------------------------------------------------
+%.bin: %.elf
+	@$(OBJCOPY) --set-section-flags .bss=alloc,load,contents -O binary $< $@
+	@echo built ... $(notdir $@)
 
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data
 #---------------------------------------------------------------------------------
-%.bin.o	%_bin.h :	%.bin
+%.hdr.o: %.hdr
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)
 
-#---------------------------------------------------------------------------------
-# rules for assembling GPU shaders
-#---------------------------------------------------------------------------------
-define shader-as
-	$(eval CURBIN := $*.shbin)
-	$(eval DEPSFILE := $(DEPSDIR)/$*.shbin.d)
-	echo "$(CURBIN).o: $< $1" > $(DEPSFILE)
-	echo "extern const u8" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"_end[];" > `(echo $(CURBIN) | tr . _)`.h
-	echo "extern const u8" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(CURBIN) | tr . _)`.h
-	echo "extern const u32" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_size";" >> `(echo $(CURBIN) | tr . _)`.h
-	picasso -o $(CURBIN) $1
-	bin2s $(CURBIN) | $(AS) -o $*.shbin.o
-endef
-
-%.shbin.o %_shbin.h : %.v.pica %.g.pica
-	@echo $(notdir $^)
-	@$(call shader-as,$^)
-
-%.shbin.o %_shbin.h : %.v.pica
-	@echo $(notdir $<)
-	@$(call shader-as,$<)
-
-%.shbin.o %_shbin.h : %.shlist
-	@echo $(notdir $<)
-	@$(call shader-as,$(foreach file,$(shell cat $<),$(dir $<)$(file)))
-
-
 -include $(DEPENDS)
+
 
 #---------------------------------------------------------------------------------------
 endif
