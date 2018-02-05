@@ -117,13 +117,13 @@ int main(int argc, char** argv)
 	ClearScreenFull(true, true);
 
 	InitFS();
-	if(FileOpen("/ctcert.bin")){
+	if(FileOpen("/seedstarter/ctcert.bin")){
 		FileWrite((u8*)0x01FFB826, 0x1E, 0x180);
-		Debug("Privkey written to /ctcert.bin");
+		Debug("Privkey written to /seedstarter/ctcert.bin");
 		DeinitFS();
 	}
 	else{
-		Debug("Failed to open /ctcert.bin");
+		Debug("Failed to open /seedstarter/ctcert.bin");
 		//while(1);
 	}
 	Debug("\nPress any key to power off\n");
