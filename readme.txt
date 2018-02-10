@@ -18,5 +18,8 @@ Of course, both homebrews need to be run on the same console.
 Just a little thing to visualize the msed_data nodes for my amusement.
 Loads lfcs.dat and lfcs_new.dat from script directory. Needs matplotlib installed.
 
+- msed_data.py
+Generates msed_data from a dumped movable.sed on PC.
+
 
 
