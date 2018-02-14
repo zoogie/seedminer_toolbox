@@ -30,6 +30,10 @@ lfcs_new_len=len(buf)/8
 lfcs_new=[]
 ftune_new=[]
 
+print("OLD3DS="+str(lfcs_len-1))
+print("NEW3DS="+str(lfcs_new_len-1))
+print("TOTAL="+str(lfcs_new_len+lfcs_len-2))
+
 for i in range(lfcs_new_len):
 	lfcs_new.append(struct.unpack("<i",buf[i*8:i*8+4])[0]<<12 or 0x800)
 

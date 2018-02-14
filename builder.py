@@ -24,6 +24,17 @@ lfcs_new_len=len(buf1)/8
 match=0
 input0=glob.glob("new/*")
 
+self_buf=[]
+for i in input0:
+	f=open(i,"rb")
+	temp=f.read()
+	temp=temp[:4]+temp[8:] 
+	self_buf.append(temp)
+	f.close()
+if(len(self_buf) != len(set(self_buf))):
+	print("Duplicates found in input!")
+	sys.exit(0)
+
 for i in input0:
 	f=open(i,"rb")
 	bufin=f.read()
