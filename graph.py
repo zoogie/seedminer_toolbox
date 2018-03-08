@@ -1,10 +1,8 @@
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import struct
-'''
-X = range(10)
-plt.plot(X, [x*x for x in X])
-plt.show()
-'''
+
+dotsize=3
 
 f=open("lfcs.dat","rb")
 buf=f.read()
@@ -14,7 +12,6 @@ lfcs_len=len(buf)/8
 lfcs=[]
 ftune=[]
 err_correct=0
-
 
 for i in range(lfcs_len):
 	lfcs.append(struct.unpack("<i",buf[i*8:i*8+4])[0]<<12 or 0x800)
@@ -30,19 +27,30 @@ lfcs_new_len=len(buf)/8
 lfcs_new=[]
 ftune_new=[]
 
-print("OLD3DS="+str(lfcs_len-1))
-print("NEW3DS="+str(lfcs_new_len-1))
-print("TOTAL="+str(lfcs_new_len+lfcs_len-2))
+old=lfcs_len-1
+new=lfcs_new_len-1
+tot=old+new
+title="old3ds:%s + new3ds:%s = %s" %(str(old),str(new),str(tot))
 
 for i in range(lfcs_new_len):
 	lfcs_new.append(struct.unpack("<i",buf[i*8:i*8+4])[0]<<12 or 0x800)
 
 for i in range(lfcs_new_len):
 	ftune_new.append(struct.unpack("<i",buf[i*8+4:i*8+8])[0])
-plt.figure(figsize=(12,4))
-plt.plot(lfcs,ftune,'--bo')
-plt.plot(lfcs_new,ftune_new,'--ro')
-plt.axhline(0, color='gray')
-plt.axvline(0, color='gray')
+	
+def graph():
+	plt.figure(figsize=(12,4))
+	plt.suptitle(title)
+	axes = plt.gca()
+	axes.get_xaxis().set_major_formatter(ticker.FormatStrFormatter("%X"))
+	plt.plot(lfcs,ftune,'--bo',markersize=dotsize)
+	plt.plot(lfcs_new,ftune_new,'--ro',markersize=dotsize)
+	plt.axhline(0, color='gray')
+	plt.axvline(0, color='gray')
+	plt.xlabel('LFCS (blue=old3ds, red=new3ds)')
+	plt.ylabel('msed3 error')
 
+graph()
 plt.show()
+graph() #bug workaround - savefig will remove the toolbar from view if used before show()
+plt.savefig("msed_data_%08d.png" % tot)
