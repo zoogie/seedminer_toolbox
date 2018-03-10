@@ -2,7 +2,8 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import struct
 
-dotsize=3
+dotsize=1.5
+linesize=0.25
 
 f=open("lfcs.dat","rb")
 buf=f.read()
@@ -39,12 +40,12 @@ for i in range(lfcs_new_len):
 	ftune_new.append(struct.unpack("<i",buf[i*8+4:i*8+8])[0])
 	
 def graph():
-	plt.figure(figsize=(12,4))
+	plt.figure(figsize=(14,5))
 	plt.suptitle(title)
 	axes = plt.gca()
 	axes.get_xaxis().set_major_formatter(ticker.FormatStrFormatter("%X"))
-	plt.plot(lfcs,ftune,'--bo',markersize=dotsize)
-	plt.plot(lfcs_new,ftune_new,'--ro',markersize=dotsize)
+	plt.plot(lfcs,ftune,'--bo',markersize=dotsize,linewidth=linesize)
+	plt.plot(lfcs_new,ftune_new,'--ro',markersize=dotsize,linewidth=linesize)
 	plt.axhline(0, color='gray')
 	plt.axvline(0, color='gray')
 	plt.xlabel('LFCS (blue=old3ds, red=new3ds)')
