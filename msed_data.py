@@ -1,4 +1,4 @@
-import struct
+import struct,random
 
 f=open("movable.sed","rb")
 buf=f.read()
@@ -16,7 +16,7 @@ if(msed2):
 print(hex(est))
 print(est)
 lfcs>>=12
-f=open("msed_data.bin","wb")
+f=open("msed_data_%08X.bin" % random.randint(0,0xFFFFFFFF),"wb")
 f.write(struct.pack("<I",lfcs))
 f.write(struct.pack("<i",est))
 f.write(struct.pack("<I",isnew))
