@@ -21,5 +21,9 @@ Loads lfcs.dat and lfcs_new.dat from script directory. Needs matplotlib installe
 - msed_data.py
 Generates msed_data from a dumped movable.sed on PC.
 
+- download.py
+Just a little script for downloading msed data from Blackfall's Gitlab repo. 
+Data is commited to this repo from the DIS Jenkins site.
+
 
 
