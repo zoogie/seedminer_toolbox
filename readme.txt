@@ -25,5 +25,9 @@ Generates msed_data from a dumped movable.sed on PC.
 Just a little script for downloading msed data from Blackfall's Gitlab repo. 
 Data is commited to this repo from the DIS Jenkins site.
 
+- compat.py
+Dumb little script to find compatible dsiware games based on save and executable size.
+Make sure to read top of script source for extra directions.
+
 
 
