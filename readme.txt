@@ -14,6 +14,9 @@ To create this file, first run seedstarter.3dsx on a cfw system (am:net access n
 To add the necessary privkey to the ctcert, run ctcertfier.firm and the privkey data will be appended to the file in that same location. 
 Of course, both homebrews need to be run on the same console.
 
+- dump_ctcert_privkey.gm9
+Same function as Ctcertifier.firm. Run with Godmode9.
+
 - graph.py
 Just a little thing to visualize the msed_data nodes for my amusement.
 Loads lfcs.dat and lfcs_new.dat from script directory. Needs matplotlib installed.
