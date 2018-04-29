@@ -19,7 +19,7 @@ Same function as Ctcertifier.firm. Run with Godmode9.
 
 - graph.py
 Just a little thing to visualize the msed_data nodes for my amusement.
-Loads lfcs.dat and lfcs_new.dat from script directory. Needs matplotlib installed.
+Loads lfcs.dat and lfcs_new.dat from script directory. Needs matplotlib installed. Either py2 or py3 is fine.
 
 - msed_data.py
 Generates msed_data from a dumped movable.sed on PC.
