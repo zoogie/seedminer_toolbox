@@ -132,6 +132,9 @@ for i in range(lfcs_new_len):
 	
 input=glob.glob("new/*")
 
+ot=0
+nt=0
+
 for i in input:
 	f=open(i,"rb")
 	buf=f.read()
@@ -140,11 +143,13 @@ for i in input:
 		temp=byteSwap4(buf[0:4])+buf[4:8]
 		lfcs_new.append(struct.unpack(">Q",temp)[0])
 		lfcs_new_len+=1
+		nt+=1
 		print("%-30s added to new3ds database" % i)
 	elif(buf[8:]=="\x00\x00\x00\x00"):
 		temp=byteSwap4(buf[0:4])+buf[4:8]
 		lfcs.append(struct.unpack(">Q",temp)[0])
 		lfcs_len+=1
+		ot+=1
 		print("%-30s added to old3ds database" % i)
 	else:
 		print("Error: input file could not be parsed")
@@ -165,6 +170,8 @@ for i in range(lfcs_new_len):
 	temp=byteSwap4(temp[0:4])+temp[4:8]
 	f.write(temp)
 f.close()
+
+print("old:%d new:%d total:%d" % (ot,nt,ot+nt))
 #exit()
 
 
