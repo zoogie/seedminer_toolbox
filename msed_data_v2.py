@@ -18,7 +18,8 @@ if(msed1):
 print(hex(est))
 print(est)
 lfcs>>=trunc_level
-lfcs<<=trunc_level | (1<<(trunc_level-1))
+lfcs<<=trunc_level 
+lfcs|= (1<<(trunc_level-1))
 f=open("msed_data_v2_%08X.bin" % random.randint(0,0xFFFFFFFF),"wb")
 f.write(struct.pack("<I",lfcs))
 f.write(struct.pack("<i",est))
