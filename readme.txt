@@ -32,5 +32,8 @@ Data is commited to this repo from the DIS Jenkins site.
 Dumb little script to find compatible dsiware games based on save and executable size.
 Make sure to read top of script source for extra directions.
 
+- make_part1.py
+This script will generate a movable_part1.py if you can provide the LFCS and ID0.
+These two params are entered at the beginning of the script itself.
 
 
